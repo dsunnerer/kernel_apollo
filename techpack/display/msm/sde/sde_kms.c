@@ -3171,11 +3171,12 @@ static void sde_kms_update_pm_qos_irq_request(struct sde_kms *sde_kms)
 
 	req = &sde_kms->pm_qos_irq_req;
 	req->type = PM_QOS_REQ_AFFINE_CORES;
-	req->cpus_affine = sde_kms->irq_cpu_mask;
+	atomic_set(&req->cpus_affine,
+			   *cpumask_bits(&sde_kms->irq_cpu_mask));
 
 	if (pm_qos_request_active(req))
 		pm_qos_update_request(req, SDE_KMS_PM_QOS_CPU_DMA_LATENCY);
-	else if (!cpumask_empty(&req->cpus_affine)) {
+	else if (atomic_read(&req->cpus_affine)) {
 		/** If request is not active yet and mask is not empty
 		 *  then it needs to be added initially
 		 */

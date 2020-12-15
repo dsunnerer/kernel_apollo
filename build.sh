@@ -41,7 +41,6 @@ package() {
  python2 $workdir/mkdtboimg.py create dtbo.img $objdir/dts/vendor/qcom/*.dtbo
 
  cp $objdir/Image.gz-dtb zImage
- cp $srcdir/out/drivers/staging/qcacld-3.0/wlan.ko modules/vendor/lib/modules/wlan.ko
 
  zip -r $zipname.zip *
 }

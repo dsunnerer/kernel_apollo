@@ -10,14 +10,11 @@
 #include <linux/slab.h>
 #include <linux/ion_kernel.h>
 #include <linux/dma-buf.h>
-#include <linux/debugfs.h>
 
 #include "cam_req_mgr_util.h"
 #include "cam_mem_mgr.h"
 #include "cam_smmu_api.h"
 #include "cam_debug_util.h"
-#include "cam_trace.h"
-#include "cam_common_util.h"
 
 static struct cam_mem_table tbl;
 static atomic_t cam_mem_mgr_state = ATOMIC_INIT(CAM_MEM_MGR_UNINITIALIZED);
@@ -119,29 +116,6 @@ static int cam_mem_util_unmap_cpu_va(struct dma_buf *dmabuf,
 	return rc;
 }
 
-static int cam_mem_mgr_create_debug_fs(void)
-{
-	tbl.dentry = debugfs_create_dir("camera_memmgr", NULL);
-	if (!tbl.dentry) {
-		CAM_ERR(CAM_MEM, "failed to create dentry");
-		return -ENOMEM;
-	}
-
-	if (!debugfs_create_bool("alloc_profile_enable",
-		0644,
-		tbl.dentry,
-		&tbl.alloc_profile_enable)) {
-		CAM_ERR(CAM_MEM,
-			"failed to create alloc_profile_enable");
-		goto err;
-	}
-
-	return 0;
-err:
-	debugfs_remove_recursive(tbl.dentry);
-	return -ENOMEM;
-}
-
 int cam_mem_mgr_init(void)
 {
 	int i;
@@ -166,8 +140,6 @@ int cam_mem_mgr_init(void)
 	mutex_init(&tbl.m_lock);
 
 	atomic_set(&cam_mem_mgr_state, CAM_MEM_MGR_INITIALIZED);
-
-	cam_mem_mgr_create_debug_fs();
 
 	return 0;
 }
@@ -403,16 +375,11 @@ static int cam_mem_util_get_dma_buf_fd(size_t len,
 {
 	struct dma_buf *dmabuf = NULL;
 	int rc = 0;
-	struct timespec64 ts1, ts2;
-	long microsec = 0;
 
 	if (!buf || !fd) {
 		CAM_ERR(CAM_MEM, "Invalid params, buf=%pK, fd=%pK", buf, fd);
 		return -EINVAL;
 	}
-
-	if (tbl.alloc_profile_enable)
-		CAM_GET_TIMESTAMP(ts1);
 
 	*buf = ion_alloc(len, heap_id_mask, flags);
 	if (IS_ERR_OR_NULL(*buf))
@@ -434,13 +401,6 @@ static int cam_mem_util_get_dma_buf_fd(size_t len,
 	if (IS_ERR_OR_NULL(dmabuf)) {
 		CAM_ERR(CAM_MEM, "dma_buf_get failed, *fd=%d", *fd);
 		rc = -EINVAL;
-	}
-
-	if (tbl.alloc_profile_enable) {
-		CAM_GET_TIMESTAMP(ts2);
-		CAM_GET_TIMESTAMP_DIFF_IN_MICRO(ts1, ts2, microsec);
-		trace_cam_log_event("IONAllocProfile", "size and time in micro",
-			len, microsec);
 	}
 
 	return rc;
@@ -596,10 +556,12 @@ static int cam_mem_util_map_hw_va(uint32_t flags,
 	return rc;
 multi_map_fail:
 	if (flags & CAM_MEM_FLAG_PROTECTED_MODE)
-		for (--i; i > 0; i--)
+		for (--i; i >= 0; i--)
 			cam_smmu_unmap_stage2_iova(mmu_hdls[i], fd);
 	else
-		for (--i; i > 0; i--)
+		// MI change i>0 to i>=0
+		// when i = 1 mean mmu_hdls[0] has map, and it need unmap
+		for (--i; i >= 0; i--)
 			cam_smmu_unmap_user_iova(mmu_hdls[i],
 				fd,
 				CAM_SMMU_REGION_IO);
@@ -679,9 +641,8 @@ int cam_mem_mgr_alloc_and_map(struct cam_mem_mgr_alloc_cmd *cmd)
 
 		if (rc) {
 			CAM_ERR(CAM_MEM,
-				"Failed in map_hw_va, len=%llu, flags=0x%x, fd=%d, region=%d, num_hdl=%d, rc=%d",
-				cmd->len, cmd->flags, fd, region,
-				cmd->num_hdl, rc);
+				"Failed in map_hw_va, flags=0x%x, fd=%d, region=%d, num_hdl=%d, rc=%d",
+				cmd->flags, fd, region, cmd->num_hdl, rc);
 			goto map_hw_fail;
 		}
 	}
@@ -730,6 +691,9 @@ map_hw_fail:
 	cam_mem_put_slot(idx);
 slot_fail:
 	dma_buf_put(dmabuf);
+	// xiaomi add
+	fput(dmabuf->file);
+	put_unused_fd(fd);
 	return rc;
 }
 
@@ -852,7 +816,7 @@ static int cam_mem_util_unmap_hw_va(int32_t idx,
 	fd = tbl.bufq[idx].fd;
 
 	CAM_DBG(CAM_MEM,
-		"unmap_hw_va : idx=%d, fd=%x, flags=0x%x, num_hdls=%d, client=%d",
+		"unmap_hw_va : idx=%d, fd=%d, flags=0x%x, num_hdls=%d, client=%d",
 		idx, fd, flags, num_hdls, client);
 
 	if (flags & CAM_MEM_FLAG_PROTECTED_MODE) {

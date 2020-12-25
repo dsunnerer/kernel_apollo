@@ -2991,7 +2991,7 @@ int smblib_get_prop_batt_charge_done(struct smb_charger *chg,
 			if ((smblib_get_fastcharge_mode(chg) == true)
 				&& (pval.intval >= 98))
 				smblib_set_fastcharge_mode(chg, false);
-				return 0;
+			return 0;
 		}
 
 		if (smblib_get_fastcharge_mode(chg) == true)

@@ -86,7 +86,6 @@ extern int dsi_panel_lockdown_info_read(unsigned char *plockdowninfo);
 extern void dsi_panel_doubleclick_enable(bool on);
 static int32_t nvt_check_palm(uint8_t input_id, uint8_t *data);
 extern void touch_irq_boost(void);
-extern void lpm_disable_for_dev(bool on, char event_dev);
 extern void xiaomi_touch_send_btn_tap_key(int status);
 uint32_t ENG_RST_ADDR  = 0x7FFF80;
 uint32_t SWRST_N8_ADDR = 0; /* read from dtsi */
@@ -1414,6 +1413,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 #endif /* MT_PROTOCOL_B */
 	int32_t i = 0;
 	int32_t finger_cnt = 0;
+	struct nvt_ts_data *ts_data = (struct nvt_ts_data *)data;
 
 #if WAKEUP_GESTURE
 	if (bTouchIsAwake == 0) {
@@ -1422,17 +1422,12 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 #endif
 	if (ts->debug_flag == TOUCH_IRQ_BOOST)
 		touch_irq_boost();
+	pm_qos_update_request(&ts_data->pm_qos_req, 100);
 	mutex_lock(&ts->lock);
-	if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-		lpm_disable_for_dev(true, 0x1);
-	}
 	if (ts->dev_pm_suspend) {
 		ret = wait_for_completion_timeout(&ts->dev_pm_suspend_completion, msecs_to_jiffies(500));
 		if (!ret) {
 			NVT_ERR("system(spi) can't finished resuming procedure, skip it\n");
-			if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-				lpm_disable_for_dev(false, 0x1);
-			}
 			goto XFER_ERROR;
 		}
 	}
@@ -1440,9 +1435,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	ret = CTP_SPI_READ(ts->client, point_data, POINT_DATA_LEN + 1);
 	if (ret < 0) {
 		NVT_ERR("CTP_SPI_READ failed.(%d)\n", ret);
-		if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-			lpm_disable_for_dev(false, 0x1);
-		}
 		goto XFER_ERROR;
 	}
 
@@ -1467,9 +1459,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 		} else {
 			nvt_update_firmware(ts->fw_name);
 		}
- 		if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-			lpm_disable_for_dev(false, 0x1);
-		}
 		goto XFER_ERROR;
    }
 #endif /* #if NVT_TOUCH_WDT_RECOVERY */
@@ -1478,9 +1467,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	/* ESD protect by FW handshake */
 	if (nvt_fw_recovery(point_data)) {
 		nvt_esd_check_enable(true);
-		if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-			lpm_disable_for_dev(false, 0x1);
-		}
 		goto XFER_ERROR;
 	}
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
@@ -1489,9 +1475,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	input_id = (uint8_t)(point_data[1] >> 3);
 
 	if (nvt_check_palm(input_id, point_data)) {
-		if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-			lpm_disable_for_dev(false, 0x1);
-		}
 		goto XFER_ERROR; /* to skip point data parsing */
 	}
 #endif
@@ -1500,10 +1483,8 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	if (bTouchIsAwake == 0) {
 		input_id = (uint8_t)(point_data[1] >> 3);
 		nvt_ts_wakeup_gesture_report(input_id, point_data);
- 		if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-			lpm_disable_for_dev(false, 0x1);
-		}
 		mutex_unlock(&ts->lock);
+		pm_qos_update_request(&ts_data->pm_qos_req, PM_QOS_DEFAULT_VALUE);
 		return IRQ_HANDLED;
 	}
 #endif
@@ -1561,9 +1542,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 			if (finger_cnt == 0 && test_bit(i, ts->slot_map)) {
 				input_report_key(ts->input_dev, BTN_TOUCH, 0);
 				input_report_key(ts->input_dev, BTN_TOOL_FINGER, 0);
-				if (ts->debug_flag >= TOUCH_DISABLE_LPM) {
-					lpm_disable_for_dev(false, 0x1);
-				}
 #if XIAOMI_ROI
 				roi_frame_cnt = 0;
 				xiaomi_touch_send_btn_tap_key(0);
@@ -1620,6 +1598,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 
 XFER_ERROR:
 	mutex_unlock(&ts->lock);
+	pm_qos_update_request(&ts_data->pm_qos_req, PM_QOS_DEFAULT_VALUE);
 
 	return IRQ_HANDLED;
 }
@@ -2281,9 +2260,6 @@ static ssize_t  nvt_touch_test_write(struct file *file, const char __user *buf,
 		case '0':
 			ts->debug_flag = 0;
 			break;
-		case '1':
-			ts->debug_flag = 1;
-			break;
 		case '2':
 			ts->debug_flag = 2;
 			break;
@@ -2623,6 +2599,10 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	if (ts->client->irq) {
 		NVT_LOG("int_trigger_type=%d\n", ts->int_trigger_type);
 		ts->irq_enabled = true;
+		ts->pm_qos_req.type = PM_QOS_REQ_AFFINE_IRQ;
+		ts->pm_qos_req.irq = ts->client->irq;
+		pm_qos_add_request(&ts->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_DEFAULT_VALUE);
 		ret = request_threaded_irq(ts->client->irq, NULL, nvt_ts_work_func,
 				ts->int_trigger_type | IRQF_ONESHOT, NVT_SPI_NAME, ts);
 		if (ret != 0) {
@@ -2853,6 +2833,7 @@ err_create_nvt_lockdown_wq_failed:
 	device_init_wakeup(&ts->input_dev->dev, 0);
 #endif
 	free_irq(ts->client->irq, ts);
+	pm_qos_remove_request(&ts->pm_qos_req);
 err_int_request_failed:
 	input_unregister_device(ts->input_dev);
 	ts->input_dev = NULL;
@@ -2944,6 +2925,7 @@ static int32_t nvt_ts_remove(struct platform_device *pdev)
 
 	nvt_irq_enable(false);
 	free_irq(ts->client->irq, ts);
+	pm_qos_remove_request(&ts->pm_qos_req);
 
 #if XIAOMI_ROI
 	mutex_destroy(&ts->diffdata_lock);

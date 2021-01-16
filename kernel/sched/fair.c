@@ -11917,8 +11917,10 @@ static int idle_balance(struct rq *this_rq, struct rq_flags *rf)
 	if (!cpu_active(this_cpu))
 		return 0;
 
+#ifdef CONFIG_SCHED_WALT
 	if (force_lb || prefer_spread)
 		avg_idle = ULLONG_MAX;
+#endif
 	/*
 	 * This is OK, because current is on_cpu, which avoids it being picked
 	 * for load-balance and preemption/IRQs are still disabled avoiding

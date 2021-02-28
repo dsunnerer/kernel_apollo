@@ -14,8 +14,8 @@ export CROSS_COMPILE_COMPAT="arm-linux-gnueabi-"
 
 build() {
  make CC=clang O=out clean
- make CC=clang O=out apollo_user_defconfig
- make CC="ccache clang" O=out -j$(nproc --all) 2>&1 | tee build.log
+ make CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=out apollo_user_defconfig
+ make CC="ccache clang" LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip O=out -j$(nproc --all) 2>&1 | tee build.log
 }
 
 name_zip() {

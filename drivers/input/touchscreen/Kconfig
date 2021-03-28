@@ -11,6 +11,7 @@ menuconfig INPUT_TOUCHSCREEN
 
 if INPUT_TOUCHSCREEN
 
+source "drivers/input/touchscreen/nt36672c/Kconfig"
 config TOUCHSCREEN_PROPERTIES
 	def_tristate INPUT
 	depends on INPUT
@@ -1322,6 +1323,7 @@ config TOUCHSCREEN_ST
 	  module will be called st.
 
 source "drivers/input/touchscreen/st/Kconfig"
+source "drivers/input/touchscreen/xiaomi/Kconfig"
 
 config TOUCHSCREEN_SYNAPTICS_DSX
 	bool "Synaptics DSX Touchscreen Driver"

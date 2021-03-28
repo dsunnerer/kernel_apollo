@@ -228,7 +228,7 @@ static void ufshcd_update_uic_error_cnt(struct ufs_hba *hba, u32 reg, int type)
 /* Query request retries */
 #define QUERY_REQ_RETRIES 3
 /* Query request timeout */
-#define QUERY_REQ_TIMEOUT 1500 /* 1.5 seconds */
+#define QUERY_REQ_TIMEOUT 3000 /* 3.0 seconds */
 
 /* Task management command timeout */
 #define TM_CMD_TIMEOUT	100 /* msecs */
@@ -466,6 +466,8 @@ static struct ufs_dev_fix ufs_fixups[] = {
 	UFS_FIX(UFS_VENDOR_SAMSUNG, "KLUEG8UHDB-C2D1",
 		UFS_DEVICE_QUIRK_PA_HIBER8TIME),
 	UFS_FIX(UFS_VENDOR_SAMSUNG, "KLUDG4UHDB-B2D1",
+		UFS_DEVICE_QUIRK_PA_HIBER8TIME),
+	UFS_FIX(UFS_VENDOR_SAMSUNG, "KLUFG8RHDA-B2D1",
 		UFS_DEVICE_QUIRK_PA_HIBER8TIME),
 	END_FIX
 };

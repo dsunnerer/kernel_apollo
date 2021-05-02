@@ -399,6 +399,7 @@
 			record-size = <0x10000>;
 			console-size = <0x60000>;
 			pmsg-size = <0x10000>;
+			ecc-size = <0x10>;
 			no-map;
 		};
 

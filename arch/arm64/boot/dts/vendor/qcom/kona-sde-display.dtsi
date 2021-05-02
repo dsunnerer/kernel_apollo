@@ -21,6 +21,8 @@
 #include "dsi-panel-sim-dualmipi-dsc375-cmd.dtsi"
 #include "dsi-panel-sim-sec-hd-cmd.dtsi"
 #include "dsi-panel-xrsmrtvwr-jdi-dual-video.dtsi"
+#include "dsi-panel-j3s-37-02-0a-dsc-video.dtsi"
+
 #include "dsi-panel-r66451-dsc-fhd-plus-144hz-cmd.dtsi"
 #include <dt-bindings/clock/mdss-7nm-pll-clk.h>
 
@@ -33,6 +35,20 @@
 
 		config {
 			pins = "gpio61";
+			drive-strength = <8>;
+			bias-disable = <0>;
+			output-high;
+		};
+	};
+
+	display_panel_vci_default: display_panel_vci_default {
+		mux {
+			pins = "gpio71";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio71";
 			drive-strength = <8>;
 			bias-disable = <0>;
 			output-high;
@@ -151,6 +167,37 @@
 		};
 	};
 
+	dsi_panel_pwr_supply_vci: dsi_panel_pwr_supply_vci {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+		qcom,panel-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "vddio";
+			qcom,supply-min-voltage = <1800000>;
+			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-enable-load = <62000>;
+			qcom,supply-disable-load = <80>;
+			qcom,supply-pre-on-sleep = <0>;
+			qcom,supply-pre-off-sleep = <0>;
+			qcom,supply-post-on-sleep = <3>;
+			qcom,supply-post-off-sleep = <0>;
+		};
+
+		qcom,panel-supply-entry@1 {
+			reg = <1>;
+			qcom,supply-name = "vci";
+			qcom,supply-min-voltage = <3000000>;
+			qcom,supply-max-voltage = <3000000>;
+			qcom,supply-enable-load = <100000>;
+			qcom,supply-disable-load = <100>;
+			qcom,supply-pre-on-sleep = <0>;
+			qcom,supply-pre-off-sleep = <0>;
+			qcom,supply-post-on-sleep = <10>;
+			qcom,supply-post-off-sleep = <0>;
+		};
+	};
+
 	display_panel_avdd: display_gpio_regulator@1 {
 		compatible = "regulator-fixed";
 		regulator-name = "display_panel_avdd";
@@ -162,6 +209,19 @@
 		regulator-boot-on;
 		pinctrl-names = "default";
 		pinctrl-0 = <&display_panel_avdd_default>;
+	};
+
+	display_panel_vci: display_gpio_regulator_vci {
+		compatible = "regulator-fixed";
+		regulator-name = "display_panel_vci";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		regulator-enable-ramp-delay = <233>;
+		gpio = <&tlmm 71 0>;
+		enable-active-high;
+		regulator-boot-on;
+		pinctrl-names = "default";
+		pinctrl-0 = <&display_panel_vci_default>;
 	};
 
 	sde_dsi: qcom,dsi-display-primary {
@@ -213,6 +273,7 @@
 		vddio-supply = <&pm8150_l14>;
 		vdd-supply = <&pm8150a_l11>;
 		avdd-supply = <&display_panel_avdd>;
+		vci-supply = <&display_panel_vci>;
 		lab-supply = <&ab_vreg>;
 		ibb-supply = <&ibb_vreg>;
 
@@ -263,7 +324,8 @@
 	msm_notifier: qcom,msm_notifier@0 {
 		compatible = "qcom,msm-notifier";
 		panel = <&dsi_sw43404_amoled_cmd &dsi_sharp_qsync_wqhd_cmd
-			&dsi_dual_sim_dsc_375_cmd>;
+			&dsi_dual_sim_dsc_375_cmd
+			&dsi_j3s_37_02_0a_dsc_video>;
 	};
 };
 
@@ -920,6 +982,23 @@
 			qcom,default-topology-index = <0>;
 			qcom,panel-roi-alignment = <720 40 720 40 720 40>;
 			qcom,partial-update-enabled = "single_roi";
+		};
+	};
+};
+
+&dsi_j3s_37_02_0a_dsc_video {
+	qcom,dsi-ctrl-num = <0>;
+	qcom,dsi-phy-num = <0>;
+	qcom,dsi-select-clocks = "mux_byte_clk0", "mux_pixel_clk0",
+		"src_byte_clk0", "src_pixel_clk0",
+		"shadow_byte_clk0", "shadow_pixel_clk0";
+
+	qcom,mdss-dsi-display-timings {
+		timing@0 {
+			qcom,mdss-dsi-panel-phy-timings = [00 21 08 08 25 22 09
+				08 06 02 04 00 1B 18];
+			qcom,display-topology = <1 1 1>;
+			qcom,default-topology-index = <0>;
 		};
 	};
 };

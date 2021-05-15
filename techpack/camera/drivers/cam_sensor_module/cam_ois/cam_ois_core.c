@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/module.h>
@@ -270,7 +271,7 @@ static int cam_ois_slaveInfo_pkt_parser(struct cam_ois_ctrl_t *o_ctrl,
 			ois_info->slave_addr >> 1;
 		o_ctrl->ois_fw_flag = ois_info->ois_fw_flag;
 		o_ctrl->is_ois_calib = ois_info->is_ois_calib;
-		o_ctrl->is_ois_pre_init = ois_info->is_ois_pre_init; //xiaomi add
+		o_ctrl->is_ois_pre_init = ois_info->is_ois_pre_init;
 		memcpy(o_ctrl->ois_name, ois_info->ois_name, OIS_NAME_LEN);
 		o_ctrl->ois_name[OIS_NAME_LEN - 1] = '\0';
 		o_ctrl->io_master_info.cci_client->retries = 3;
@@ -430,7 +431,6 @@ static int cam_ois_fw_download(struct cam_ois_ctrl_t *o_ctrl)
 			CAM_ERR(CAM_OIS, "OIS FW download failed %d", rc);
 	}
 
-	/* Load xxx.mem added by xiaomi*/
 	rc = request_firmware(&fw_xm, fw_name_mem, dev);
 	if (rc) {
 		CAM_INFO(CAM_OIS, "no fw named %s, skip", fw_name_mem);
@@ -476,55 +476,6 @@ static int cam_ois_fw_download(struct cam_ois_ctrl_t *o_ctrl)
 		fw_size_xm = 0;
 		release_firmware(fw_xm);
 	}
-
-	/* Load xxx.ph added by xiaomi, not used by now*/
-	/*
-	rc = request_firmware(&fw_xm, fw_name_ph, dev);
-	if (rc) {
-		CAM_INFO(CAM_OIS, "Failed to locate %s, not error", fw_name_ph);
-		rc = 0;
-	} else {
-		total_bytes = fw_xm->size;
-		i2c_reg_setting.addr_type = o_ctrl->opcode.fw_addr_type;
-		i2c_reg_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
-		i2c_reg_setting.size = total_bytes;
-		i2c_reg_setting.delay = 0;
-		fw_size_xm = PAGE_ALIGN(sizeof(struct cam_sensor_i2c_reg_array) *
-			total_bytes) >> PAGE_SHIFT;
-		page_xm = cma_alloc(dev_get_cma_area((o_ctrl->soc_info.dev)),
-			fw_size_xm, 0, GFP_KERNEL);
-		if (!page_xm) {
-			CAM_ERR(CAM_OIS, "Failed in allocating i2c_array");
-			release_firmware(fw_xm);
-			return -ENOMEM;
-		}
-
-		i2c_reg_setting.reg_setting = (struct cam_sensor_i2c_reg_array *) (
-			page_address(page_xm));
-
-		for (i = 0, ptr = (uint8_t *)fw_xm->data; i < total_bytes;) {
-				for (cnt = 0; cnt < OIS_TRANS_SIZE && i < total_bytes;
-					cnt++, ptr++, i++) {
-					i2c_reg_setting.reg_setting[cnt].reg_addr = pheripheral_addr;
-					i2c_reg_setting.reg_setting[cnt].reg_data = *ptr;
-					i2c_reg_setting.reg_setting[cnt].delay = 0;
-					i2c_reg_setting.reg_setting[cnt].data_mask = 0;
-				}
-			i2c_reg_setting.size = cnt;
-			if (o_ctrl->opcode.is_addr_increase)
-				pheripheral_addr += cnt;
-			rc = camera_io_dev_write_continuous(&(o_ctrl->io_master_info),
-				&i2c_reg_setting, 1);
-			if (rc < 0)
-				CAM_ERR(CAM_OIS, "OIS FW Memory download failed %d", rc);
-		}
-		cma_release(dev_get_cma_area((o_ctrl->soc_info.dev)),
-			page_xm, fw_size_xm);
-		page_xm = NULL;
-		fw_size_xm = 0;
-		release_firmware(fw_xm);
-	}
-	*/
 
 release_firmware:
 	cma_release(dev_get_cma_area((o_ctrl->soc_info.dev)),
@@ -743,59 +694,6 @@ static int cam_lc898124_ois_fw_download(struct cam_ois_ctrl_t *o_ctrl)
 		CAM_ERR(CAM_OIS, "OIS FW DM download failed %d", rc);
 		goto release_firmware;
 	}
-
-
-	/* Load xxx.mem added by xiaomi*/
-	/*
-	rc = request_firmware(&fw_xm, fw_name_mem, dev);
-	if (rc) {
-		CAM_INFO(CAM_OIS, "no fw named %s, skip", fw_name_mem);
-		rc = 0;
-	} else {
-		total_bytes = fw_xm->size;
-		i2c_reg_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
-		i2c_reg_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
-		i2c_reg_setting.size = total_bytes;
-		i2c_reg_setting.delay = 0;
-		fw_size_xm = PAGE_ALIGN(sizeof(struct cam_sensor_i2c_reg_array) *
-			total_bytes) >> PAGE_SHIFT;
-		page_xm = cma_alloc(dev_get_cma_area((o_ctrl->soc_info.dev)),
-			fw_size_xm, 0, GFP_KERNEL);
-		if (!page_xm) {
-			CAM_ERR(CAM_OIS, "Failed in allocating i2c_array");
-			release_firmware(fw);
-			return -ENOMEM;
-		}
-
-		i2c_reg_setting.reg_setting = (struct cam_sensor_i2c_reg_array *) (
-			page_address(page_xm));
-
-		ptr = (uint8_t *)fw_xm->data;
-		mem_addr = ptr[0];
-		for (i = 0; i < total_bytes;) {
-			CAM_DBG(CAM_OIS, "download	%s,mem_addr=0x%04x", fw_name_mem,mem_addr);
-			for (cnt = 0; cnt < LC124EP3_OIS_TRANS_SIZE && i < total_bytes;
-				cnt++, i++) {
-				i2c_reg_setting.reg_setting[cnt].reg_addr = mem_addr;
-				i2c_reg_setting.reg_setting[cnt].reg_data = ptr[i+1];
-				i2c_reg_setting.reg_setting[cnt].delay = 0;
-				i2c_reg_setting.reg_setting[cnt].data_mask = 0;
-			}
-			i2c_reg_setting.size = cnt;
-				mem_addr = ptr[i];
-			rc = camera_io_dev_write_continuous(&(o_ctrl->io_master_info),
-				&i2c_reg_setting, 1);
-			if (rc < 0)
-				CAM_ERR(CAM_OIS, "OIS FW Memory download failed %d", rc);
-		}
-		cma_release(dev_get_cma_area((o_ctrl->soc_info.dev)),
-			page_xm, fw_size_xm);
-		page_xm = NULL;
-		fw_size_xm = 0;
-		release_firmware(fw_xm);
-	}
-	*/
-
 
 release_firmware:
 	cma_release(dev_get_cma_area((o_ctrl->soc_info.dev)),
@@ -1125,7 +1023,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 						"Calib parsing failed: %d", rc);
 					return rc;
 				}
-			} else if ((o_ctrl->is_ois_pre_init != 0) && //xiaomi add begin
+			} else if ((o_ctrl->is_ois_pre_init != 0) &&
 				(o_ctrl->i2c_pre_init_data.is_settings_valid ==
 				0)) {
 				CAM_DBG(CAM_OIS,
@@ -1142,7 +1040,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 						"pre init settings parsing failed: %d", rc);
 					return rc;
 				}
-			} //xiaomi add end
+			}
 			break;
 			}
 		}
@@ -1156,7 +1054,6 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			o_ctrl->cam_ois_state = CAM_OIS_CONFIG;
 		}
 
-		//xiaomi add begin
 		if (o_ctrl->is_ois_pre_init) {
 			CAM_DBG(CAM_OIS, "apply pre init settings");
 			rc = cam_ois_apply_settings(o_ctrl,
@@ -1165,10 +1062,9 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 				CAM_ERR(CAM_OIS, "Cannot apply pre init data");
 				goto pwr_dwn;
 			}
-		} //xiaomi add end
+		}
 
 		if (o_ctrl->ois_fw_flag) {
-			/* xiaomi add begin */
 			CAM_DBG(CAM_OIS, "is_addr_indata = %d", o_ctrl->opcode.is_addr_indata);
 			if(1 == o_ctrl->opcode.is_addr_indata) {
 				CAM_DBG(CAM_OIS, "apply lc898124 ois_fw settings");
@@ -1206,14 +1102,12 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			}
 		}
 
-
-		// xiaomi add begin
 		rc = delete_request(&o_ctrl->i2c_pre_init_data);
 		if (rc < 0) {
 			CAM_WARN(CAM_OIS,
 				"Fail deleting Pre Init data: rc: %d", rc);
 			rc = 0;
-		} //xiaomi add end
+		}
 
 		rc = delete_request(&o_ctrl->i2c_init_data);
 		if (rc < 0) {
@@ -1328,7 +1222,6 @@ void cam_ois_shutdown(struct cam_ois_ctrl_t *o_ctrl)
 	if (o_ctrl->i2c_init_data.is_settings_valid == 1)
 		delete_request(&o_ctrl->i2c_init_data);
 
-	// xiaomi add
 	if (o_ctrl->i2c_pre_init_data.is_settings_valid == 1)
 		delete_request(&o_ctrl->i2c_pre_init_data);
 
@@ -1459,7 +1352,6 @@ int cam_ois_driver_cmd(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 		if (o_ctrl->i2c_init_data.is_settings_valid == 1)
 			delete_request(&o_ctrl->i2c_init_data);
 
-		// xiaomi add
 		if (o_ctrl->i2c_pre_init_data.is_settings_valid == 1)
 			delete_request(&o_ctrl->i2c_pre_init_data);
 

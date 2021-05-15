@@ -95,8 +95,13 @@
 
 //static atomic_t cs35l41_mclk_rsc_ref;
 #ifdef AUDIO_SM8250_FLAG
-#define CS35L41_SPEAKER_NAME "cs35l41.1-0040"
-#define CS35L41_RECEIVER_NAME "cs35l41.1-0042"
+  #if defined (CONFIG_TARGET_PRODUCT_ALIOTH)
+    #define CS35L41_SPEAKER_NAME "cs35l41.1-0040"
+    #define CS35L41_RECEIVER_NAME "cs35l41.1-0041"
+  #else
+    #define CS35L41_SPEAKER_NAME "cs35l41.1-0040"
+    #define CS35L41_RECEIVER_NAME "cs35l41.1-0042"
+  #endif
 #else
 #define CS35L41_SPEAKER_NAME "cs35l41.2-0040"
 #define CS35L41_RECEIVER_NAME "cs35l41.2-0042"
@@ -115,6 +120,7 @@ struct snd_soc_dai_link_component cs35l41_codec_components[] = {
 	},
 #endif
 };
+
 static struct snd_soc_codec_conf cs35l41_codec_conf[] = {
 	{
 		.dev_name	= CS35L41_SPEAKER_NAME,
@@ -6325,7 +6331,7 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 	},
 #ifdef AUDIO_SM8250_FLAG
 	{/* hw:x,30 */
-#if defined(CONFIG_TARGET_PRODUCT_APOLLO) || defined(CONFIG_TARGET_PRODUCT_CAS)
+#if defined(CONFIG_TARGET_PRODUCT_APOLLO) || defined(CONFIG_TARGET_PRODUCT_CAS) || defined(CONFIG_TARGET_PRODUCT_ALIOTH)
 		.name = "Tertiary TDM1 Hostless Playback",
 		.stream_name = "Tertiary TDM1 Hostless Playback",
 		.cpu_dai_name = "msm-dai-q6-tdm.36898",
@@ -6356,6 +6362,9 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
 		.ignore_suspend = 1,
 		 /* this dailink has playback support */
 		.ignore_pmdown_time = 1,
+#if defined(CONFIG_TARGET_PRODUCT_THYME)
+		.be_hw_params_fixup = msm_be_hw_params_fixup,
+#endif
 		.ops = &msm_cdc_dma_be_ops,
 #endif
 	},
@@ -7216,7 +7225,7 @@ static struct snd_soc_dai_link msm_mi2s_be_dai_links[] = {
 
 #ifdef AUDIO_SM8250_FLAG  //j1
 static struct snd_soc_dai_link tert_mi2s_rx_cs35l41_dai_links[] = {
-#if defined(CONFIG_TARGET_PRODUCT_APOLLO) || defined(CONFIG_TARGET_PRODUCT_CAS)
+#if defined(CONFIG_TARGET_PRODUCT_APOLLO) || defined(CONFIG_TARGET_PRODUCT_CAS)  || defined(CONFIG_TARGET_PRODUCT_ALIOTH) 
 	{
 		.name = LPASS_BE_TERT_TDM_RX_0,
 		.stream_name = "Tertiary TDM0 Playback",
@@ -7284,44 +7293,6 @@ static struct snd_soc_dai_link pri_mi2s_rx_tfa9874_dai_links[] = {
 		.ops = &msm_mi2s_be_ops,
 		.ignore_suspend = 1,
 		.ignore_pmdown_time = 1,
-	},
-};
-#else //g7a
-
-static struct snd_soc_dai_link sec_mi2s_rx_tfa9874_be_dai_links[] = {
-	{
-		.name = LPASS_BE_SEC_MI2S_RX,
-		.stream_name = "Secondary MI2S Playback",
-		.cpu_dai_name = "msm-dai-q6-mi2s.1",
-		.platform_name = "msm-pcm-routing",
-		.codec_name = "tfa98xx.1-0034",
-		.codec_dai_name = "tfa98xx-aif-1-34",
-		.no_pcm = 1,
-		.dpcm_playback = 1,
-		.id = MSM_BACKEND_DAI_SECONDARY_MI2S_RX,
-		.be_hw_params_fixup = msm_be_hw_params_fixup,
-		.ops = &msm_mi2s_be_ops,
-		.ignore_suspend = 1,
-		.ignore_pmdown_time = 1,
-	},
-};
-
-static struct snd_soc_dai_link sec_mi2s_rx_cs35l41_dai_links[] = {
-	{
-		.name = LPASS_BE_SEC_MI2S_RX,
-		.stream_name = "Secondary MI2S Playback",
-		.cpu_dai_name = "msm-dai-q6-mi2s.1",
-		.platform_name = "msm-pcm-routing",
-		.codecs = cs35l41_codec_components,
-		.num_codecs = ARRAY_SIZE(cs35l41_codec_components),
-		.no_pcm = 1,
-		.dpcm_playback = 1,
-		.id = MSM_BACKEND_DAI_SECONDARY_MI2S_RX,
-		.be_hw_params_fixup = msm_be_hw_params_fixup,
-		.ops = &msm_mi2s_be_ops,
-		.ignore_suspend = 1,
-		.ignore_pmdown_time = 1,
-		.init = &cs35l41_init,
 	},
 };
 
@@ -7722,9 +7693,6 @@ static struct snd_soc_dai_link msm_kona_dai_links[
 #ifdef AUDIO_SM8250_FLAG
 			ARRAY_SIZE(tert_mi2s_rx_cs35l41_dai_links) +
 			ARRAY_SIZE(pri_mi2s_rx_tfa9874_dai_links) +
-#else
-			ARRAY_SIZE(sec_mi2s_rx_tfa9874_be_dai_links) +
-			ARRAY_SIZE(sec_mi2s_rx_cs35l41_dai_links) +
 #endif
 			ARRAY_SIZE(msm_auxpcm_be_dai_links) +
 			ARRAY_SIZE(msm_wsa_cdc_dma_be_dai_links) +
@@ -8028,8 +7996,9 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 #ifdef AUDIO_SM8250_FLAG
 				if (get_hw_version_platform() == HARDWARE_PLATFORM_UMI ||
 				    get_hw_version_platform() == HARDWARE_PLATFORM_CMI ||
-				    get_hw_version_platform() == HARDWARE_PLATFORM_VERTHANDI ||
 				    get_hw_version_platform() == HARDWARE_PLATFORM_APOLLO ||
+				    get_hw_version_platform() == HARDWARE_PLATFORM_ALIOTH ||
+				    get_hw_version_platform() == HARDWARE_PLATFORM_THYME ||
 					get_hw_version_platform() == HARDWARE_PLATFORM_CAS) {
 					memcpy(msm_kona_dai_links + total_links,
 						tert_mi2s_rx_cs35l41_dai_links,
@@ -8043,27 +8012,6 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 					total_links += ARRAY_SIZE(pri_mi2s_rx_tfa9874_dai_links);
 					dev_info(dev, "%s: Using pri_mi2s_rx_tfa9874_dai_links\n", __func__);
 				}
-#else
-
-				if (get_hw_version_platform() == HARDWARE_PLATFORM_PICASSO) {
-					memcpy(msm_kona_dai_links + total_links,
-						sec_mi2s_rx_tfa9874_be_dai_links,
-						sizeof(sec_mi2s_rx_tfa9874_be_dai_links));
-					total_links += ARRAY_SIZE(sec_mi2s_rx_tfa9874_be_dai_links);
-				}
-				if (get_hw_version_platform() == HARDWARE_PLATFORM_MONET) {
-				    memcpy(msm_kona_dai_links + total_links,
-					    sec_mi2s_rx_cs35l41_dai_links,
-					    sizeof(sec_mi2s_rx_cs35l41_dai_links));
-				    total_links += ARRAY_SIZE(sec_mi2s_rx_cs35l41_dai_links);
-				}
-				if (get_hw_version_platform() == HARDWARE_PLATFORM_VANGOGH) {
-				    memcpy(msm_kona_dai_links + total_links,
-					    sec_mi2s_rx_cs35l41_dai_links,
-					    sizeof(sec_mi2s_rx_cs35l41_dai_links));
-				    total_links += ARRAY_SIZE(sec_mi2s_rx_cs35l41_dai_links);
-				}
-
 
 #endif
 			}

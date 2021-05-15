@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
 /*
  * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #ifndef __UAPI_CAM_SENSOR_H__
@@ -118,9 +119,9 @@ struct cam_ois_opcode {
 	uint32_t coeff;
 	uint32_t pheripheral;
 	uint32_t memory;
-	uint8_t  fw_addr_type; //Xiaomi add
-	uint8_t  is_addr_increase; //Xiaomi add
-	uint8_t  is_addr_indata; //Xiaomi add
+	uint8_t  fw_addr_type;
+	uint8_t  is_addr_increase;
+	uint8_t  is_addr_indata;
         uint8_t  fwversion;
         uint32_t fwchecksumsize;
 	uint32_t fwchecksum;
@@ -144,7 +145,7 @@ struct cam_cmd_ois_info {
 	uint8_t               cmd_type;
 	uint8_t               ois_fw_flag;
 	uint8_t               is_ois_calib;
-	uint8_t               is_ois_pre_init; //xiaomi add
+	uint8_t               is_ois_pre_init;
 	char                  ois_name[MAX_OIS_NAME_SIZE];
 	struct cam_ois_opcode opcode;
 } __attribute__((packed));

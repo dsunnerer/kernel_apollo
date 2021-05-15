@@ -113,6 +113,8 @@
 
 #define FTS_TEST_OPEN_MIN                       	3000
 
+#define EXPERT_ARRAY_SIZE          3
+
 /*****************************************************************************
 *  Alternative mode (When something goes wrong, the modules may be able to solve the problem.)
 *****************************************************************************/
@@ -155,6 +157,11 @@ struct fts_ts_platform_data {
 	u32 y_min;
 	u32 max_touch_number;
 	u32 open_min;
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
+	u32 touch_range_array[5];
+	u32 touch_def_array[4];
+	u32 touch_expert_array[4 * EXPERT_ARRAY_SIZE];
+#endif
 };
 
 struct ts_event {
@@ -229,7 +236,6 @@ struct fts_ts_data {
 	struct mutex power_supply_lock;
 	struct work_struct power_supply_work;
 	struct notifier_block power_supply_notifier;
-	int is_usb_exist;
 
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	u8 gesture_status;
@@ -237,7 +243,9 @@ struct fts_ts_data {
 	struct mutex cmd_update_mutex;
 	int palm_sensor_switch;
 	bool power_status;
+	bool is_expert_mode;
 #endif
+
 };
 
 enum GESTURE_MODE_TYPE {

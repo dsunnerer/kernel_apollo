@@ -2030,12 +2030,9 @@ __setup("androidboot.bootdevice=", get_android_boot_dev);
  */
 static void ufs_qcom_parse_lpm(struct ufs_qcom_host *host)
 {
-#ifdef CONFIG_FACTORY_BUILD
 	struct device_node *node = host->hba->dev->of_node;
+
 	host->disable_lpm = of_property_read_bool(node, "qcom,disable-lpm");
-#else
-	host->disable_lpm = false;
-#endif
 	if (host->disable_lpm)
 		pr_info("%s: will disable all LPM modes\n", __func__);
 }

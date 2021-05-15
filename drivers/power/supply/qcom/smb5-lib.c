@@ -3091,7 +3091,7 @@ int smblib_get_prop_batt_charge_done(struct smb_charger *chg,
 		if (pval.intval >= 98) {
 			/* when charge done, set bark timer to 128s to decrease wakeups */
 			smblib_set_wdog_bark_timer(chg, BARK_TIMER_LONG);
-			schedule_delayed_work(&chg->plugout_delay_awake, msecs_to_jiffies(2000));
+			vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 		}
 
 		if (chg->power_good_en) {
@@ -8035,14 +8035,6 @@ static void smb_check_init_boot(struct work_struct *work)
 	if (chg->usb_psy)
 		power_supply_changed(chg->usb_psy);
 }
-
-static void smb_plugout_delay_awake(struct work_struct *work)
-{
-	struct smb_charger *chg = container_of(work, struct smb_charger,
-					plugout_delay_awake.work);
-	vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
-}
-
 static void smblib_micro_usb_plugin(struct smb_charger *chg, bool vbus_rising)
 {
 	int rc = 0;
@@ -8124,7 +8116,7 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 			vote(chg->fcc_votable, FCC_STEPPER_VOTER,
 							true, 1500000);
 		/* clear chg_awake wakeup source when charger is absent */
-		schedule_delayed_work(&chg->plugout_delay_awake, msecs_to_jiffies(2000));
+		vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 	}
 
 	power_supply_changed(chg->usb_psy);
@@ -8301,8 +8293,7 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		chg->recheck_charger = false;
 		chg->precheck_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
 		/* clear chg_awake wakeup source when charger is absent */
-		vote(chg->awake_votable, CHG_AWAKE_VOTER, true, 0);
-		schedule_delayed_work(&chg->plugout_delay_awake, msecs_to_jiffies(2000));
+		vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 	}
 
 	if (chg->connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB)
@@ -9138,12 +9129,6 @@ static void typec_sink_insertion(struct smb_charger *chg)
 	if (!chg->pr_swap_in_progress)
 		chg->ok_to_pd = (!(chg->pd_disabled) || chg->early_usb_attach)
 					&& !chg->pd_not_supported;
-
-	 if (chg->support_conn_therm) {
-                rc = smblib_set_sw_conn_therm_regulation(chg, true);
-                if (rc < 0)
-                        smblib_err(chg, "Couldn't start SW conn therm rc=%d\n", rc);
-        }
 }
 
 static void typec_src_insertion(struct smb_charger *chg)
@@ -9181,12 +9166,6 @@ static void typec_src_insertion(struct smb_charger *chg)
 			smblib_err(chg, "Couldn't to enable DPDM rc=%d\n", rc);
 		else
 			smblib_rerun_apsd(chg);
-	}
-
-	if (chg->support_conn_therm) {
-		rc = smblib_set_sw_conn_therm_regulation(chg, true);
-		if (rc < 0)
-			smblib_err(chg, "Couldn't start SW conn therm rc=%d\n", rc);
 	}
 }
 
@@ -9450,7 +9429,7 @@ static void typec_src_removal(struct smb_charger *chg)
 	vote(chg->usb_icl_votable, WIRELESS_BY_USB_IN_VOTER, false, 0);
 	vote(chg->chg_disable_votable, AFTER_FFC_VOTER, false, 0);
 	/* clear chg_awake wakeup source when typec removal */
-	schedule_delayed_work(&chg->plugout_delay_awake, msecs_to_jiffies(2000));
+	vote(chg->awake_votable, CHG_AWAKE_VOTER, false, 0);
 	/* reset USBOV votes and cancel work */
 	cancel_delayed_work_sync(&chg->usbov_dbc_work);
 	vote(chg->awake_votable, USBOV_DBC_VOTER, false, 0);
@@ -12050,7 +12029,6 @@ int smblib_init(struct smb_charger *chg)
 	INIT_DELAYED_WORK(&chg->cc_un_compliant_charge_work, smblib_cc_un_compliant_charge_work);
 	INIT_DELAYED_WORK(&chg->clean_cp_to_sw_work, smblib_clean_cp_to_sw_work);
 	INIT_DELAYED_WORK(&chg->check_init_boot, smb_check_init_boot);
-	INIT_DELAYED_WORK(&chg->plugout_delay_awake, smb_plugout_delay_awake);
 
 	if (chg->wa_flags & CHG_TERMINATION_WA) {
 		INIT_WORK(&chg->chg_termination_work,

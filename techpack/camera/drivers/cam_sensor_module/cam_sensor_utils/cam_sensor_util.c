@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/kernel.h>
@@ -755,7 +756,7 @@ int32_t msm_camera_fill_vreg_params(
 			if (j == num_vreg)
 				power_setting[i].seq_val = INVALID_VREG;
 			break;
-		case SENSOR_CUSTOM_REG3://xiaomi add liuqinhong@xiaomi.com start
+		case SENSOR_CUSTOM_REG3:
 			for (j = 0; j < num_vreg; j++) {
 
 				if (!strcmp(soc_info->rgltr_name[j],
@@ -777,7 +778,7 @@ int32_t msm_camera_fill_vreg_params(
 			}
 			if (j == num_vreg)
 				power_setting[i].seq_val = INVALID_VREG;
-			break;//xiaomi add liuqinhong@xiaomi.com end
+			break;
 		default:
 			break;
 		}
@@ -1708,7 +1709,7 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 		case SENSOR_VAF_PWDM:
 		case SENSOR_CUSTOM_REG1:
 		case SENSOR_CUSTOM_REG2:
-		case SENSOR_CUSTOM_REG3://xiaomi add liuqinhong@xiaomi.com
+		case SENSOR_CUSTOM_REG3:
 			if (power_setting->seq_val == INVALID_VREG)
 				break;
 
@@ -1825,7 +1826,7 @@ power_up_failed:
 		case SENSOR_VAF_PWDM:
 		case SENSOR_CUSTOM_REG1:
 		case SENSOR_CUSTOM_REG2:
-		case SENSOR_CUSTOM_REG3://xiaomi add liuqinhong@xiaomi.com
+		case SENSOR_CUSTOM_REG3:
 			if (power_setting->seq_val < num_vreg) {
 				CAM_DBG(CAM_SENSOR, "Disable Regulator");
 				vreg_idx = power_setting->seq_val;
@@ -1994,7 +1995,7 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 		case SENSOR_VAF_PWDM:
 		case SENSOR_CUSTOM_REG1:
 		case SENSOR_CUSTOM_REG2:
-		case SENSOR_CUSTOM_REG3://xiaomi add liuqinhong@xiaomi.com
+		case SENSOR_CUSTOM_REG3:
 			if (pd->seq_val == INVALID_VREG)
 				break;
 

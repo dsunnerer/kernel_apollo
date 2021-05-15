@@ -18,3 +18,11 @@ config TOUCHSCREEN_FTS_DIRECTORY
     default "focaltech_touch"
     depends on TOUCHSCREEN_FTS
 
+
+config TOUCHSCREEN_SUPPORT_NEW_GAME_MODE
+    tristate "Touch Support New Game Mode"
+    default n
+    help
+      Say Y here if the device support new game mode
+
+      If not support, say N.

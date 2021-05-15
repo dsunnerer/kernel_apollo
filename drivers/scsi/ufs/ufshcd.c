@@ -58,6 +58,7 @@ static int ufshcd_wb_buf_flush_enable(struct ufs_hba *hba);
 static int ufshcd_wb_buf_flush_disable(struct ufs_hba *hba);
 static bool ufshcd_wb_is_buf_flush_needed(struct ufs_hba *hba);
 static int ufshcd_wb_toggle_flush_during_h8(struct ufs_hba *hba, bool set);
+
 #ifdef CONFIG_DEBUG_FS
 
 static int ufshcd_tag_req_type(struct request *rq)
@@ -220,7 +221,6 @@ static void ufshcd_update_uic_error_cnt(struct ufs_hba *hba, u32 reg, int type)
 /* UIC command timeout, unit: ms */
 #define UIC_CMD_TIMEOUT	500
 
-#define UIC_MI_CMD_TIMEOUT	3000
 /* NOP OUT retries waiting for NOP IN response */
 #define NOP_OUT_RETRIES    10
 /* Timeout after 30 msecs if NOP OUT hangs without response */
@@ -5238,7 +5238,7 @@ static int ufshcd_uic_pwr_ctrl(struct ufs_hba *hba, struct uic_command *cmd)
 more_wait:
 	if (!oops_in_progress) {
 		if (!wait_for_completion_timeout(hba->uic_async_done,
-						msecs_to_jiffies(UIC_MI_CMD_TIMEOUT))) {
+						msecs_to_jiffies(UIC_CMD_TIMEOUT))) {
 			u32 intr_status = 0;
 			s64 ts_since_last_intr;
 
@@ -8615,7 +8615,8 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
 
 
 	/* Enable WB only for UFS-3.1 or UFS-2.2 OR if desc len >= 0x59 */
-	if ((dev_desc->wspecversion >= 0x310) ||
+/*	if ((dev_desc->wspecversion >= 0x310) ||
+	    (dev_desc->wspecversion == 0x220) ||
 	    (dev_desc->wmanufacturerid == UFS_VENDOR_TOSHIBA &&
 	     dev_desc->wspecversion >= 0x300 &&
 	     hba->desc_size.dev_desc >= 0x59)) {
@@ -8627,8 +8628,30 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
 			desc_buf[DEVICE_DESC_PARAM_EXT_UFS_FEATURE_SUP + 2]
 								<< 8 |
 			desc_buf[DEVICE_DESC_PARAM_EXT_UFS_FEATURE_SUP + 3];
-	}
 
+		hba->dev_info.b_wb_buffer_type =
+			desc_buf[DEVICE_DESC_PARAM_WB_TYPE];
+
+		if (hba->dev_info.b_wb_buffer_type)
+			goto skip_unit_desc;
+
+		hba->dev_info.wb_config_lun = false;
+		for (lun = 0; lun < UFS_UPIU_MAX_GENERAL_LUN; lun++) {
+			memset(wb_buf, 0, sizeof(wb_buf));
+			err = ufshcd_get_wb_alloc_units(hba, lun, wb_buf);
+			if (err)
+				break;
+
+			res = wb_buf[0] << 24 | wb_buf[1] << 16 |
+				wb_buf[2] << 8 | wb_buf[3];
+			if (res) {
+				hba->dev_info.wb_config_lun = true;
+				break;
+			}
+		}
+	}*/
+
+//skip_unit_desc:
 	/* Zero-pad entire buffer for string termination. */
 	memset(desc_buf, 0, buff_len);
 

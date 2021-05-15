@@ -339,6 +339,9 @@
 	mi,mdss-dsi-panel-vi-switch-threshold = <246>;
 	mi,mdss-dsi-panel-dynamic-elvss-enabled;
 	mi,mdss-dsi-panel-disp-rate-gpio = <&tlmm 50 0>;
+	/* IRQF_ONESHOT | IRQF_TRIGGER_RISING */
+	/* trig-flags: falling-0x0002 rasing-0x0001 */
+	mi,esd-err-irq-gpio = <&tlmm 51 0x2002>;
 
 	/* White Color Coordinate */
 	mi,mdss-dsi-white-point-read-enabled;
@@ -359,7 +362,6 @@
 	mi,mdss-dsi-pan-enable-smart-fps;
 	mi,mdss-dsi-smart-fps-max_framerate = <120>;
 	mi,mdss-dsi-panel-hbm-brightness = <1>;
-	mi,mdss-dsi-panel-max-brightness-clone = <6143>;
 	mi,mdss-dsi-dimlayer-brightness-alpha-lut-item-count = <21>;
 	mi,mdss-dsi-dimlayer-brightness-alpha-lut =
 	/* brightness  alpha */

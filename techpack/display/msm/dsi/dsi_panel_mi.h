@@ -33,9 +33,6 @@
 #define DEFAULT_FOD_OFF_DIMMING_DELAY     170
 #define DEFAULT_FOD_OFF_ENTER_AOD_DELAY   300
 #define DISPPARAM_THERMAL_SET             0x1
-#define DEFAULT_FOD_OFF_DIMMING_DELAY   170
-
-#define DOZE_MIN_BRIGHTNESS_LEVEL       5
 
 #define MAX_VSYNC_COUNT                   200
 
@@ -297,4 +294,5 @@ int dsi_panel_get_thermal_hbm_disabled(struct dsi_panel *panel,
 struct calc_hw_vsync *get_hw_calc_vsync_struct(int dsi_display_type);
 ssize_t calc_hw_vsync_info(struct dsi_panel *panel,
 				char *buf);
+
 #endif /* _DSI_PANEL_MI_H_ */

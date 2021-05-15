@@ -250,7 +250,7 @@
 		vib_r_spare = < 0x68 >;
 		vib_bstdbg = < 0x30 0xeb 0xd4 0 0 0 >;
 		vib_effect_id_boundary = < 10 >;
-		vib_effect_max = < 193 >;   /*vib_effect_max must bigger than vib_effect_id*/
+		vib_effect_max = < 170 >;
 		vib_trig_config = < 0 1 0 1 2
 						0 1 0 1 2
 						0 1 0 1 2 >;
@@ -609,6 +609,17 @@
         qcom,platform-reset-gpio = <&tlmm 12 0>;
 };
 
+&dsi_k11a_38_08_0a_dsc_cmd {
+        qcom,panel-supply-entries = <&dsi_panel_k11a_pwr_supply_vci>;
+        qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+        qcom,mdss-dsi-bl-min-level = <1>;
+        qcom,mdss-dsi-bl-max-level = <2047>;
+        qcom,mdss-brightness-max-level = <2047>;
+        qcom,mdss-brightness-init-level = <536>;
+        qcom,platform-te-gpio = <&tlmm 66 0>;
+        qcom,platform-reset-gpio = <&tlmm 12 0>;
+};
+
 &dsi_j11_38_08_0a_fhd_cmd {
 	qcom,panel-supply-entries = <&dsi_panel_j11_pwr_supply_vci>;
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
@@ -631,6 +642,17 @@
 	qcom,mdss-dsi-bl-max-level = <4095>;
 	qcom,mdss-brightness-max-level = <4095>;
 	qcom,mdss-brightness-init-level = <410>;
+	qcom,platform-te-gpio = <&tlmm 66 0>;
+	qcom,platform-reset-gpio = <&tlmm 12 0>;
+};
+
+&dsi_j2s_mp_42_02_0a_dsc_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_vci>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <2047>;
+	qcom,mdss-brightness-max-level = <2047>;
+	qcom,mdss-brightness-init-level = <536>;
 	qcom,platform-te-gpio = <&tlmm 66 0>;
 	qcom,platform-reset-gpio = <&tlmm 12 0>;
 };

@@ -1,4 +1,5 @@
 /* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -225,6 +226,7 @@
 	mi,feature-enabled;
 	mi,is-tddi-flag;
 	mi,mdss-panel-on-dimming-delay = <120>;
+	mi,esd-err-irq-gpio = <&tlmm 51 0x2002>; /* trig-flags: falling-0x0002 rasing-0x0001*/
 	mi,mdss-dsi-panel-xy-coordinate = <0x6 0x18>;
 	mi,mdss-dsi-panel-max-luminance = <0x6 0x4>;
 	mi,mdss-dsi-pan-enable-smart-fps;

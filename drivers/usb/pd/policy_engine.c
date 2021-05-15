@@ -432,7 +432,6 @@ struct usbpd {
 	struct notifier_block	psy_nb;
 
 	bool			batt_2s;
-	bool			fix_pdo_5v;
 
 	int			bms_charge_full;
 	int			bat_voltage_max;
@@ -4804,7 +4803,7 @@ static ssize_t usbpd_verifed_store(struct device *dev,
 		}
 	}
 
-	if (!pd->verifed && !pd->pps_found && !pd->fix_pdo_5v)
+	if (!pd->verifed && !pd->pps_found)
 		schedule_delayed_work(&pd->fixed_pdo_work, 5 * HZ);
 
 	return size;
@@ -5511,10 +5510,6 @@ static void usbpd_pdo_workfunc(struct work_struct *w)
 	for (i = 0; i < ARRAY_SIZE(pd->received_pdos); i++) {
 		u32 pdo = pd->received_pdos[i];
 
-		if (pd->received_pdos[2] == 0) {
-			pd->fix_pdo_5v = true;
-			usbpd_info(&pd->dev,"fixed pdo [2]= %d",pd->fix_pdo_5v);
-			}
 		if (pdo == 0)
 			break;
 

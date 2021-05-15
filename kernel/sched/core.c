@@ -28,11 +28,6 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
-#undef CREATE_TRACE_POINTS
-#include <trace/events/kperfevents_sched.h>
-#define CREATE_TRACE_POINTS
-DEFINE_TRACE(kperfevents_sched_wait);
-
 DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
 
 #if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_JUMP_LABEL)
@@ -2879,6 +2874,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 	p->low_latency			= 0;
 #endif
 	INIT_LIST_HEAD(&p->se.group_node);
+
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	p->se.cfs_rq			= NULL;
 #endif
@@ -5633,9 +5629,11 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
 	if (retval)
 		goto out_free_new_mask;
 
+
 	cpuset_cpus_allowed(p, cpus_allowed);
 	cpumask_and(new_mask, in_mask, cpus_allowed);
 	trace_sched_setaffinity(pid, in_mask);
+
 	/*
 	 * Since bandwidth control happens on root_domain basis,
 	 * if admission test is enabled, we only admit -deadline
@@ -8665,41 +8663,3 @@ void sched_exit(struct task_struct *p)
 #endif /* CONFIG_SCHED_WALT */
 
 __read_mostly bool sched_predl = 1;
-
-inline bool is_critical_task(struct task_struct *p)
-{
-	return is_top_app(p) || is_inherit_top_app(p);
-}
-
-inline bool is_top_app(struct task_struct *p)
-{
-	return p && p->top_app > 0;
-}
-
-inline bool is_inherit_top_app(struct task_struct *p)
-{
-	return p && p->inherit_top_app > 0;
-}
-
-inline void set_inherit_top_app(struct task_struct *p,
-				struct task_struct *from)
-{
-	if (!p || !from)
-		return;
-	if (is_critical_task(p) || from->inherit_top_app >= INHERIT_DEPTH)
-		return;
-	p->inherit_top_app = from->inherit_top_app + 1;
-#ifdef CONFIG_PERF_HUMANTASK
-	p->human_task = 1;
-#endif
-}
-
-inline void restore_inherit_top_app(struct task_struct *p)
-{
-	if (p && is_inherit_top_app(p)) {
-		p->inherit_top_app = 0;
-#ifdef CONFIG_PERF_HUMANTASK
-		p->human_task  = 0 ;
-#endif
-	}
-}

@@ -102,6 +102,7 @@
 #define FTS_REG_TIME_ENTER_MONITOR		0x87
 #define FTS_REG_ORIENTATION                 0x8c
 #define FTS_REG_EDGE_FILTER_LEVEL           0x9c
+#define FTS_REG_GAMEMODE                    0xc1
 
 #define FTS_PALM_EN                         0x9a
 #define FTS_PALM_DATA                       0x01

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2010-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
  */
 #include <linux/errno.h>
 #include <linux/module.h>
@@ -422,8 +421,8 @@ static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 		__secure_tz_update_entry3(scm_data, sizeof(scm_data),
 					&val, sizeof(val), priv);
 	}
-        priv->bin.total_time = 0;
-        priv->bin.busy_time = 0;
+	priv->bin.total_time = 0;
+	priv->bin.busy_time = 0;
 
 	/*
 	 * If the decision is to move to a different level, make sure the GPU

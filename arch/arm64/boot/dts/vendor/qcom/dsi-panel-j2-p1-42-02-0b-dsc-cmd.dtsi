@@ -254,6 +254,9 @@
 	mi,mdss-dsi-panel-hbm-off-51-index = <1>;
 	mi,mdss-dsi-panel-fod-off-51-index = <1>;
 	mi,mdss-dsi-panel-disp-rate-gpio = <&tlmm 50 0>;
+	/* IRQF_ONESHOT | IRQF_TRIGGER_RISING */
+	/* trig-flags: falling-0x0002 rasing-0x0001 */
+	mi,esd-err-irq-gpio = <&tlmm 51 0x2002>;
 
 	/* White Color Coordinate */
 	mi,mdss-dsi-white-point-read-enabled;

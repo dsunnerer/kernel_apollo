@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #ifndef _CAM_SENSOR_CMN_HEADER_
@@ -171,7 +170,8 @@ enum cam_eeprom_packet_opcodes {
 enum cam_ois_packet_opcodes {
 	CAM_OIS_PACKET_OPCODE_INIT,
 	CAM_OIS_PACKET_OPCODE_OIS_CONTROL,
-	CAM_OIS_PACKET_OPCODE_OIS_GETDATA
+	CAM_OIS_PACKET_OPCODE_OIS_GETDATA,
+	CAM_OIS_PACKET_OPCODE_TELEOIS_GETDATA
 };
 
 enum msm_bus_perf_setting {

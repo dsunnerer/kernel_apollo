@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  */
 
 #ifndef CAM_JPEG_HW_INTF_H
@@ -9,6 +8,7 @@
 
 #include "cam_cpas_api.h"
 
+#define CAM_JPEG_CTX_MAX              8
 #define CAM_JPEG_DEV_PER_TYPE_MAX     1
 
 #define CAM_JPEG_CMD_BUF_MAX_SIZE     128

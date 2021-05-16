@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #ifndef _CAM_FD_HW_CORE_H_
@@ -141,7 +140,6 @@ struct cam_fd_hw_errata_wa {
 	bool   single_irq_only;
 	bool   ro_mode_enable_always;
 	bool   ro_mode_results_invalid;
-    bool   skip_reset;
 };
 
 /**

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include "cam_fd_hw_core.h"
@@ -674,13 +673,11 @@ int cam_fd_hw_init(void *hw_priv, void *init_hw_args, uint32_t arg_size)
 	fd_core->core_state = CAM_FD_CORE_STATE_IDLE;
 	spin_unlock_irqrestore(&fd_core->spin_lock, flags);
 
-    if (init_args->reset_required){
-        rc = cam_fd_hw_reset(hw_priv, NULL, 0);
-        if (rc) {
-            CAM_ERR(CAM_FD, "Reset Failed, rc=%d", rc);
-            goto disable_soc;
-        }
-    }
+	rc = cam_fd_hw_reset(hw_priv, NULL, 0);
+	if (rc) {
+		CAM_ERR(CAM_FD, "Reset Failed, rc=%d", rc);
+		goto disable_soc;
+	}
 
 	cam_fd_hw_util_enable_power_on_settings(fd_hw);
 

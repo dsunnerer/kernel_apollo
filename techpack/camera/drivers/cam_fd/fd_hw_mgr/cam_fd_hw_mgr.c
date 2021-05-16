@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/module.h>
@@ -849,7 +848,6 @@ static int cam_fd_mgr_util_submit_frame(void *priv, void *data)
 	if (hw_device->ready_to_process == false) {
 		mutex_unlock(&hw_device->lock);
 		mutex_unlock(&hw_mgr->frame_req_mutex);
-		CAM_INFO(CAM_FD, "FrameSubmit : Frame[%lld] HW is busy", frame_req->request_id);
 		return -EBUSY;
 	}
 
@@ -993,7 +991,7 @@ static int32_t cam_fd_mgr_workq_irq_cb(void *priv, void *data)
 		struct cam_fd_hw_frame_done_args frame_done_args;
 
 		CAM_DBG(CAM_FD, "FrameDone : Frame[%lld]",
-		frame_req->request_id);
+			frame_req->request_id);
 
 		frame_done_args.hw_ctx = frame_req->hw_ctx;
 		frame_done_args.ctx_hw_private =
@@ -1246,8 +1244,6 @@ static int cam_fd_mgr_hw_start(void *hw_mgr_priv, void *mgr_start_args)
 	struct cam_fd_device *hw_device;
 	struct cam_fd_hw_init_args hw_init_args;
 
-    	struct cam_hw_info *fd_hw;
-	struct cam_fd_core *fd_core;
 	if (!hw_mgr_priv || !hw_mgr_start_args) {
 		CAM_ERR(CAM_FD, "Invalid arguments %pK %pK",
 			hw_mgr_priv, hw_mgr_start_args);
@@ -1269,21 +1265,13 @@ static int cam_fd_mgr_hw_start(void *hw_mgr_priv, void *mgr_start_args)
 		return rc;
 	}
 
-	hw_device->ready_to_process = true;
-
-    	fd_hw = (struct cam_hw_info *)hw_device->hw_intf->hw_priv;
-	fd_core = (struct cam_fd_core *)fd_hw->core_info;
-    	if (hw_device->hw_intf->hw_ops.init) {
+	if (hw_device->hw_intf->hw_ops.init) {
 		hw_init_args.hw_ctx = hw_ctx;
 		hw_init_args.ctx_hw_private = hw_ctx->ctx_hw_private;
-        if (fd_core->hw_static_info->enable_errata_wa.skip_reset)
-            hw_init_args.reset_required = false;
-        else
-            hw_init_args.reset_required = true;
-        rc = hw_device->hw_intf->hw_ops.init(
-                hw_device->hw_intf->hw_priv, &hw_init_args,
-                sizeof(hw_init_args));
-        if (rc) {
+		rc = hw_device->hw_intf->hw_ops.init(
+			hw_device->hw_intf->hw_priv, &hw_init_args,
+			sizeof(hw_init_args));
+		if (rc) {
 			CAM_ERR(CAM_FD, "Failed in HW Init %d", rc);
 			return rc;
 		}
@@ -1312,7 +1300,7 @@ static int cam_fd_mgr_hw_flush_req(void *hw_mgr_priv,
 		CAM_ERR(CAM_FD, "Invalid context is used, hw_ctx=%pK", hw_ctx);
 		return -EPERM;
 	}
-	CAM_INFO(CAM_FD, "ctx index=%u, hw_ctx=%d", hw_ctx->ctx_index,
+	CAM_DBG(CAM_FD, "ctx index=%u, hw_ctx=%d", hw_ctx->ctx_index,
 		hw_ctx->device_index);
 
 	rc = cam_fd_mgr_util_get_device(hw_mgr, hw_ctx, &hw_device);
@@ -1413,7 +1401,7 @@ static int cam_fd_mgr_hw_flush_ctx(void *hw_mgr_priv,
 		CAM_ERR(CAM_FD, "Invalid context is used, hw_ctx=%pK", hw_ctx);
 		return -EPERM;
 	}
-	CAM_INFO(CAM_FD, "ctx index=%u, hw_ctx=%d", hw_ctx->ctx_index,
+	CAM_DBG(CAM_FD, "ctx index=%u, hw_ctx=%d", hw_ctx->ctx_index,
 		hw_ctx->device_index);
 
 	rc = cam_fd_mgr_util_get_device(hw_mgr, hw_ctx, &hw_device);
@@ -1421,7 +1409,6 @@ static int cam_fd_mgr_hw_flush_ctx(void *hw_mgr_priv,
 		CAM_ERR(CAM_FD, "Error in getting device %d", rc);
 		return rc;
 	}
-
 
 	mutex_lock(&hw_mgr->frame_req_mutex);
 	list_for_each_entry_safe(frame_req, req_temp,
@@ -1446,7 +1433,6 @@ static int cam_fd_mgr_hw_flush_ctx(void *hw_mgr_priv,
 			continue;
 
 		list_del_init(&frame_req->list);
-		CAM_INFO(CAM_FD, "Request deleted from frame processing list");
 		mutex_lock(&hw_device->lock);
 		if ((hw_device->ready_to_process == true) ||
 			(hw_device->cur_hw_ctx != hw_ctx))
@@ -1539,7 +1525,7 @@ static int cam_fd_mgr_hw_stop(void *hw_mgr_priv, void *mgr_stop_args)
 		CAM_ERR(CAM_FD, "Invalid context is used, hw_ctx=%pK", hw_ctx);
 		return -EPERM;
 	}
-	CAM_INFO(CAM_FD, "ctx index=%u, hw_ctx=%d", hw_ctx->ctx_index,
+	CAM_DBG(CAM_FD, "ctx index=%u, hw_ctx=%d", hw_ctx->ctx_index,
 		hw_ctx->device_index);
 
 	rc = cam_fd_mgr_util_get_device(hw_mgr, hw_ctx, &hw_device);
@@ -1548,10 +1534,8 @@ static int cam_fd_mgr_hw_stop(void *hw_mgr_priv, void *mgr_stop_args)
 		return rc;
 	}
 
-	CAM_INFO(CAM_FD, "FD Device ready_to_process = %d",
+	CAM_DBG(CAM_FD, "FD Device ready_to_process = %d",
 		hw_device->ready_to_process);
-
-	hw_device->ready_to_process = true;
 
 	if (hw_device->hw_intf->hw_ops.deinit) {
 		hw_deinit_args.hw_ctx = hw_ctx;
